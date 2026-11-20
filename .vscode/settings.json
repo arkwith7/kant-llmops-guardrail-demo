@@ -1,0 +1,10 @@
+{
+  // 강의 화면용: 글자를 크게
+  "editor.fontSize": 18,
+  "terminal.integrated.fontSize": 18,
+  "files.encoding": "utf8",
+  // WSL 기준 가상환경 (Windows 에서 열면 .venv\\Scripts\\python.exe 로 바꾸세요)
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "files.exclude": { "**/__pycache__": true }
+}

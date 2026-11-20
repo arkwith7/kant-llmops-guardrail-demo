@@ -1,0 +1,3 @@
+# guardrail_demo.py --backend local / mock 은 표준 라이브러리만 사용합니다.
+# Bedrock(--backend bedrock, bedrock_gemma_demo.py) 용
+boto3>=1.35

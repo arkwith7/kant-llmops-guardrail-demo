@@ -1,0 +1,52 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "① 시연: 로컬 GPU (gemma3:27b)",
+      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
+      "args": ["--backend", "local", "--model", "gemma3:27b"],
+      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "② 시연: 로컬 소형 모델 비교 (llama3.2)",
+      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
+      "args": ["--backend", "local", "--model", "llama3.2"],
+      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "③ 대화 모드: 로컬 GPU",
+      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
+      "args": ["--backend", "local", "--chat"],
+      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "④ 백업: Bedrock 서울 리전 (Gemma 3 12B)",
+      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
+      "args": ["--backend", "bedrock"],
+      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "⑤ 최종 백업: 모의 LLM",
+      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
+      "args": ["--backend", "mock"],
+      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "LLM 체험: Bedrock Gemma 3 4B/12B/27B 비교",
+      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/bedrock_gemma_demo.py",
+      "args": ["--compare"],
+      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "LLM 체험: Bedrock 스트리밍 (첫 토큰 지연)",
+      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/bedrock_gemma_demo.py",
+      "args": ["--stream"],
+      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "시연 전 환경 점검",
+      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/check_env.py",
+      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+    }
+  ]
+}

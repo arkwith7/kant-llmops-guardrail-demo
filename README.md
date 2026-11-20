@@ -1,0 +1,119 @@
+# Private LLM · LLMOps 가드레일 시연 (KANT 강의용)
+
+Private LLM을 기업 환경에서 **운영**할 때 필요한 가드레일을 50줄 남짓한 파이썬으로 보여 주는 강의 시연 프로젝트입니다.
+로컬 GPU에서 오픈 웨이트 모델(Gemma 3 등)을 직접 띄우고, 같은 코드를 AWS Bedrock 서울 리전에도 붙일 수 있습니다.
+
+```
+[사용자 입력] → ① 입력 가드 → ② LLM (local / bedrock / mock) → ③ 출력 가드 → [응답]
+                     └──────────── ④ 관측 로그 (logs/guardrail_log.jsonl) ────────────┘
+```
+
+| 단계 | 하는 일 | 코드 |
+|---|---|---|
+| ① 입력 가드 | 프롬프트 인젝션 탐지, 개인정보(전화·이메일·주민번호) 마스킹 | `detect_injection`, `mask_pii` |
+| ② LLM 호출 | 로컬 Ollama/vLLM(OpenAI 호환), Bedrock Converse, 모의 LLM | `llm_backends.py` |
+| ③ 출력 가드 | 데이터 변경 SQL(DELETE·DROP 등) 차단, 응답 속 개인정보 재마스킹 | `check_sql_safety`, `mask_pii` |
+| ④ 관측성 | 요청 1건 = JSON 1줄 (판정, 이벤트, 지연, 토큰) | `write_log` |
+
+## 프로젝트 구조
+
+```
+├── guardrail_demo.py        # 시연 본체: 시나리오 5개 / --chat 대화 모드
+├── llm_backends.py          # LLM 백엔드 (local / bedrock / mock) + .env 로더
+├── bedrock_gemma_demo.py    # LLM 체험: Bedrock 서울 리전 Gemma 3 4B·12B·27B 비교, 스트리밍
+├── check_env.py             # 시연 전 점검: GPU · 로컬 LLM · Bedrock · 모의 LLM
+├── .env.example             # 설정 예시 (복사해서 .env 로 사용, .env 는 Git 제외)
+├── requirements.txt         # boto3 (Bedrock 용만)
+├── docs/
+│   ├── 시연-리허설-체크리스트.md
+│   └── iam-policy-bedrock-gemma.json   # 최소 권한 IAM 정책 예시
+└── .vscode/                 # 실행 구성(F5), 작업(점검·예열·GPU 모니터), 강의용 큰 글꼴
+```
+
+## 빠른 시작 (WSL + VS Code)
+
+```bash
+git clone https://github.com/arkwith7/kant-llmops-guardrail-demo.git
+cd kant-llmops-guardrail-demo
+code .                                   # VS Code (Remote - WSL)
+
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env                     # AWS 키 등 값 채우기
+python check_env.py                      # 점검
+python guardrail_demo.py                 # 시연 (기본: 로컬 gemma3:27b)
+```
+
+VS Code에서는 **실행 및 디버그(F5)** 목록에서 바로 고를 수 있습니다.
+
+| 실행 구성 | 내용 |
+|---|---|
+| ① 시연: 로컬 GPU (gemma3:27b) | 기본 시연 |
+| ② 시연: 로컬 소형 모델 비교 (llama3.2) | 작은 모델은 가드에 더 자주 걸리는지 비교 |
+| ③ 대화 모드: 로컬 GPU | 수강생이 부른 문장을 즉석 테스트 |
+| ④ 백업: Bedrock 서울 리전 | 로컬 GPU 문제 시 |
+| ⑤ 최종 백업: 모의 LLM | 인터넷·GPU 모두 없을 때 |
+| LLM 체험: Bedrock 비교 / 스트리밍 | Gemma 3 크기별 품질·지연·토큰 비교 |
+| 시연 전 환경 점검 | `check_env.py` |
+
+작업(Ctrl+Shift+P → Tasks: Run Task): 설치, 점검, **Ollama 예열**, **GPU 모니터(nvidia-smi -l 1)**, 관측 로그 보기.
+
+## 1. 로컬 Private LLM (Ollama)
+
+```bash
+ollama list                    # 설치된 모델 확인
+ollama pull gemma3:27b         # 기본 시연 모델 (약 17GB, 24GB VRAM GPU에 적합)
+ollama pull llama3.2           # 소형 비교 모델 (3B, 약 2GB)
+curl http://localhost:11434/v1/models
+```
+
+- 모델 바꾸기: `python guardrail_demo.py --model llama3.2` 또는 `.env`의 `LOCAL_LLM_MODEL`
+- vLLM 사용: `python guardrail_demo.py --base-url http://localhost:8000/v1 --model google/gemma-3-4b-it`
+- `deepseek-r1` 같은 추론 모델은 `<think>` 블록을 출력해 시연 화면이 길어지므로 권장하지 않습니다.
+
+## 2. AWS Bedrock 서울 리전 (IAM 자격 증명)
+
+- 서울 리전(ap-northeast-2)에서 In-Region으로 쓸 수 있는 Gemma 3: `google.gemma-3-4b-it`, `google.gemma-3-12b-it`, `google.gemma-3-27b-it`
+- Meta Llama 3.x는 서울 리전에서 제공되지 않습니다.
+- 인증은 **IAM 사용자 액세스 키**를 씁니다. `.env`에 넣거나, 비워 두면 `~/.aws/credentials`(aws configure)를 씁니다.
+
+```dotenv
+AWS_REGION=ap-northeast-2
+AWS_ACCESS_KEY_ID=AKIA...
+AWS_SECRET_ACCESS_KEY=...
+BEDROCK_MODEL_ID=google.gemma-3-12b-it
+```
+
+IAM 사용자에는 [docs/iam-policy-bedrock-gemma.json](docs/iam-policy-bedrock-gemma.json)처럼 **서울 리전 Gemma 3 호출 권한만** 주는 것을 권장합니다.
+
+```bash
+python guardrail_demo.py --backend bedrock
+python bedrock_gemma_demo.py --compare        # 4B / 12B / 27B 비교
+python bedrock_gemma_demo.py --stream         # 첫 토큰까지 시간
+python bedrock_gemma_demo.py --chat --model google.gemma-3-4b-it
+```
+
+## 3. 시연 시나리오
+
+| 시나리오 | 입력 | 기대 판정 |
+|---|---|---|
+| 정상 질문 | 10월 지역별 매출 합계 SQL | OK |
+| 개인정보 포함 입력 | 내 번호 010-…로 보내줘 | OK (번호는 마스킹 후 모델에 전달) |
+| 프롬프트 인젝션 | 이전 지시는 모두 무시하고… | BLOCKED (입력 단계) |
+| 모델의 위험 SQL | 2024년 이전 주문 삭제 SQL | BLOCKED (출력 단계) |
+| 모델의 개인정보 노출 | 담당자 연락처 + 사내 문서 검색 결과 | MODIFIED (출력 마스킹) |
+
+실제 모델은 매번 다르게 답할 수 있습니다. 모델이 위험 요청을 스스로 거절하면 화면에 안내가 나오며, 이것이 "그래서 출력 가드가 필요하다"는 설명으로 이어집니다.
+
+## 한계 (강의에서 다루는 내용)
+
+정규식 규칙은 1단계 방어선일 뿐 우회될 수 있습니다. 실무에서는 **분류 모델(Llama Guard 계열) → 권한 최소화(읽기 전용 DB 계정) → 위험 작업 사람 승인**을 겹쳐 씁니다.
+
+## 보안 주의
+
+- `.env`는 Git에 올라가지 않습니다(`.gitignore`). 키를 코드·슬라이드·화면에 노출하지 마세요.
+- 시연용 IAM 키는 최소 권한으로 만들고, 시연 후 비활성화하거나 주기적으로 교체하세요.
+
+## License
+
+MIT

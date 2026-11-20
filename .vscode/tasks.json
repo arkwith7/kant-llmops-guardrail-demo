@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "설치: 가상환경 + 패키지",
+      "type": "shell",
+      "command": "python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && cp -n .env.example .env || true",
+      "problemMatcher": []
+    },
+    {
+      "label": "점검: 시연 환경",
+      "type": "shell",
+      "command": "python3 check_env.py",
+      "problemMatcher": []
+    },
+    {
+      "label": "예열: Ollama gemma3:27b 로딩",
+      "type": "shell",
+      "command": "ollama run gemma3:27b '한 문장으로 인사해줘'",
+      "problemMatcher": []
+    },
+    {
+      "label": "모니터: GPU (nvidia-smi 1초 간격)",
+      "type": "shell",
+      "command": "nvidia-smi -l 1",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "reveal": "always" }
+    },
+    {
+      "label": "보기: 관측 로그",
+      "type": "shell",
+      "command": "cat logs/guardrail_log.jsonl",
+      "problemMatcher": []
+    }
+  ]
+}
