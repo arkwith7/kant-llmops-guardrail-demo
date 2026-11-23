@@ -1,0 +1,71 @@
+# Part 1 · Ansible — 이미 만들어진 GPU 서버(EC2 또는 사내 서버)의 설정을 코드로 맞춘다.
+# Terraform 이 '서버를 만든다'면, Ansible 은 '서버 안을 원하는 상태로 만든다'.
+#
+#   cp part1/ansible/inventory.ini.example part1/ansible/inventory.ini   # IP·키 경로 입력
+#   ansible-playbook -i part1/ansible/inventory.ini part1/ansible/playbook.yml --check   # 미리보기
+#   ansible-playbook -i part1/ansible/inventory.ini part1/ansible/playbook.yml
+#   ansible-playbook ... -e model=Qwen/Qwen2.5-1.5B-Instruct   # 모델 교체도 같은 명령으로
+- name: vLLM 서빙 서버 상태 맞추기
+  hosts: gpu_servers
+  become: true
+  vars:
+    vllm_image: vllm/vllm-openai:latest
+    model: Qwen/Qwen2.5-7B-Instruct
+    max_model_len: 8192
+    gpu_util: "0.90"
+
+  tasks:
+    - name: GPU 드라이버 확인
+      ansible.builtin.command: nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
+      register: gpu
+      changed_when: false
+
+    - name: GPU 정보 출력
+      ansible.builtin.debug:
+        msg: "{{ gpu.stdout }}"
+
+    - name: Docker 와 NVIDIA 컨테이너 런타임 확인
+      ansible.builtin.command: docker info --format '{{ "{{" }}json .Runtimes{{ "}}" }}'
+      register: runtimes
+      changed_when: false
+      failed_when: "'nvidia' not in runtimes.stdout"
+
+    - name: 모델 캐시 디렉터리
+      ansible.builtin.file:
+        path: /opt/hf-cache
+        state: directory
+        mode: "0755"
+
+    - name: vLLM 이미지 받기
+      ansible.builtin.command: docker pull {{ vllm_image }}
+      register: pull
+      changed_when: "'Downloaded newer image' in pull.stdout"
+
+    - name: 실행 중인 컨테이너의 모델 확인
+      ansible.builtin.command: docker inspect vllm --format '{{ "{{" }}join .Args " "{{ "}}" }}'
+      register: current
+      changed_when: false
+      failed_when: false
+
+    - name: 설정이 다르면 기존 컨테이너 제거
+      ansible.builtin.command: docker rm -f vllm
+      when: current.rc == 0 and ('--model ' + model) not in current.stdout
+      changed_when: true
+
+    - name: vLLM 컨테이너 기동 (없을 때만)
+      ansible.builtin.command: >
+        docker run -d --name vllm --restart unless-stopped
+        --gpus all --ipc=host -p 8000:8000
+        -v /opt/hf-cache:/root/.cache/huggingface
+        {{ vllm_image }}
+        --model {{ model }} --max-model-len {{ max_model_len }} --gpu-memory-utilization {{ gpu_util }}
+      when: current.rc != 0 or ('--model ' + model) not in current.stdout
+
+    - name: API 준비 대기 (모델 다운로드·로딩)
+      ansible.builtin.uri:
+        url: "http://localhost:8000/health"
+        status_code: 200
+      register: health
+      retries: 90
+      delay: 10
+      until: health.status == 200

@@ -1,0 +1,28 @@
+# Part 1 · Docker 로 로컬 LLM 서버 띄우기 (노트북 GPU, 안정적)
+#   docker compose -f part1/docker/compose.ollama.yaml up -d
+#   curl http://localhost:11435/v1/models
+#
+# - WSL 에 이미 설치된 Ollama(11434)와 겹치지 않도록 11435 포트 사용
+# - 호스트에 받아 둔 모델을 그대로 마운트 → 다시 다운로드하지 않음
+#   Linux/WSL 에서 Ollama 를 서비스로 설치했다면 모델은 /usr/share/ollama/.ollama 에 있음 (기본값)
+#   사용자 계정으로 실행했다면: OLLAMA_HOME_DIR=$HOME/.ollama docker compose ... up -d
+# - GPU 연결: Docker Desktop(WSL2) 또는 NVIDIA Container Toolkit 필요
+#   확인: docker run --rm --gpus all nvidia/cuda:12.8.0-base-ubuntu22.04 nvidia-smi
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: kant-ollama
+    ports:
+      - "11435:11434"
+    volumes:
+      - ${OLLAMA_HOME_DIR:-/usr/share/ollama/.ollama}:/root/.ollama
+    environment:
+      - OLLAMA_NUM_PARALLEL=4        # 동시 처리 수 (Part 2 벤치마크와 비교해 볼 값)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped

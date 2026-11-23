@@ -17,3 +17,11 @@ logs/
 .DS_Store
 Thumbs.db
 .idea/
+
+# Terraform / Ansible (상태 파일·개인 설정은 올리지 않음)
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+terraform.tfvars
+part1/ansible/inventory.ini

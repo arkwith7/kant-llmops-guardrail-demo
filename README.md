@@ -1,4 +1,6 @@
-# Private LLM · LLMOps 가드레일 시연 (KANT 강의용)
+# Private LLM 인프라 · 서빙 · LLMOps 시연 (KANT 강의용)
+
+> Part 1 클라우드 인프라 → [part1/README.md](part1/README.md) · Part 2 서빙 → [part2/README.md](part2/README.md) · Part 3 LLMOps 가드레일 → 아래
 
 Private LLM을 기업 환경에서 **운영**할 때 필요한 가드레일을 50줄 남짓한 파이썬으로 보여 주는 강의 시연 프로젝트입니다.
 로컬 GPU에서 오픈 웨이트 모델(Gemma 3 등)을 직접 띄우고, 같은 코드를 AWS Bedrock(관리형 클라우드)의 선택한 리전에도 붙일 수 있습니다.
@@ -18,7 +20,9 @@ Private LLM을 기업 환경에서 **운영**할 때 필요한 가드레일을 5
 ## 프로젝트 구조
 
 ```
-├── guardrail_demo.py        # 시연 본체: 시나리오 5개 / --chat 대화 모드
+├── part1/                   # Part 1 클라우드 인프라: Docker · Kubernetes · Terraform(AWS g6) · Ansible
+├── part2/                   # Part 2 서빙: KV 캐시 계산 · PagedAttention 시뮬 · 벤치마크 · 양자화 비교
+├── guardrail_demo.py        # Part 3 시연 본체: 시나리오 5개 / --chat 대화 모드
 ├── llm_backends.py          # LLM 백엔드 (local / bedrock / mock) + .env 로더
 ├── bedrock_gemma_demo.py    # LLM 체험: Bedrock 리전별 모델 조회, Gemma 3 4B·12B·27B 비교, 스트리밍
 ├── check_env.py             # 시연 전 점검: GPU · 로컬 LLM · Bedrock · 모의 LLM

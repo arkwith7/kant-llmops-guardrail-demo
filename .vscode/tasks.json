@@ -25,12 +25,57 @@
       "command": "nvidia-smi -l 1",
       "isBackground": true,
       "problemMatcher": [],
-      "presentation": { "panel": "dedicated", "reveal": "always" }
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
     },
     {
       "label": "보기: 관측 로그",
       "type": "shell",
       "command": "cat logs/guardrail_log.jsonl",
+      "problemMatcher": []
+    },
+    {
+      "label": "Part 1 · Docker Ollama 기동 (11435)",
+      "type": "shell",
+      "command": "docker compose -f part1/docker/compose.ollama.yaml up -d && sleep 3 && curl -s http://localhost:11435/v1/models",
+      "problemMatcher": []
+    },
+    {
+      "label": "Part 1 · Docker 정리",
+      "type": "shell",
+      "command": "docker compose -f part1/docker/compose.ollama.yaml down; docker compose -f part1/docker/compose.vllm.yaml down",
+      "problemMatcher": []
+    },
+    {
+      "label": "Part 1 · kind 클러스터 + 매니페스트 적용",
+      "type": "shell",
+      "command": "kind create cluster --name kant --config part1/k8s/kind-config.yaml; kubectl apply -f part1/k8s/ && sleep 5 && kubectl get pods -o wide",
+      "problemMatcher": []
+    },
+    {
+      "label": "Part 1 · GPU Pod Pending 이유 보기",
+      "type": "shell",
+      "command": "kubectl describe pod -l app=llm-serving | sed -n '/Events/,$p'",
+      "problemMatcher": []
+    },
+    {
+      "label": "Part 1 · kind 클러스터 삭제",
+      "type": "shell",
+      "command": "kind delete cluster --name kant",
+      "problemMatcher": []
+    },
+    {
+      "label": "Part 1 · terraform plan (비용 없음)",
+      "type": "shell",
+      "command": "cd part1/terraform && terraform init -input=false && terraform validate && terraform plan",
+      "problemMatcher": []
+    },
+    {
+      "label": "Part 2 · Ollama 모델 GPU 에서 내리기 (vLLM 전)",
+      "type": "shell",
+      "command": "ollama ps; for m in $(ollama ps | awk 'NR>1{print $1}'); do ollama stop $m; done; ollama ps",
       "problemMatcher": []
     }
   ]

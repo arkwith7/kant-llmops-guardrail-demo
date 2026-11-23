@@ -1,0 +1,6 @@
+# cp terraform.tfvars.example terraform.tfvars  (terraform.tfvars 는 .gitignore 대상)
+region        = "ap-northeast-2"
+instance_type = "g6.xlarge"
+allowed_cidr  = "203.0.113.10/32" # ← 내 공인 IP 로 바꾸기:  curl -s https://checkip.amazonaws.com
+# key_name    = "my-keypair"      # Ansible 실습 시
+model         = "Qwen/Qwen2.5-7B-Instruct"

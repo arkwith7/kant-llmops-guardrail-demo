@@ -3,50 +3,160 @@
   "configurations": [
     {
       "name": "① 시연: 로컬 GPU (gemma3:27b)",
-      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
-      "args": ["--backend", "local", "--model", "gemma3:27b"],
-      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/guardrail_demo.py",
+      "args": [
+        "--backend",
+        "local",
+        "--model",
+        "gemma3:27b"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
     },
     {
       "name": "② 시연: 로컬 소형 모델 비교 (llama3.2)",
-      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
-      "args": ["--backend", "local", "--model", "llama3.2"],
-      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/guardrail_demo.py",
+      "args": [
+        "--backend",
+        "local",
+        "--model",
+        "llama3.2"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
     },
     {
       "name": "③ 대화 모드: 로컬 GPU",
-      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
-      "args": ["--backend", "local", "--chat"],
-      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/guardrail_demo.py",
+      "args": [
+        "--backend",
+        "local",
+        "--chat"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
     },
     {
       "name": "④ 백업: AWS Bedrock (.env 리전·모델, 기본 도쿄)",
-      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
-      "args": ["--backend", "bedrock"],
-      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/guardrail_demo.py",
+      "args": [
+        "--backend",
+        "bedrock"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
     },
     {
       "name": "⑤ 최종 백업: 모의 LLM",
-      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
-      "args": ["--backend", "mock"],
-      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/guardrail_demo.py",
+      "args": [
+        "--backend",
+        "mock"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
     },
     {
       "name": "LLM 체험: Bedrock Gemma 3 4B/12B/27B 비교",
-      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/bedrock_gemma_demo.py",
-      "args": ["--compare"],
-      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/bedrock_gemma_demo.py",
+      "args": [
+        "--compare"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
     },
     {
       "name": "LLM 체험: Bedrock 스트리밍 (첫 토큰 지연)",
-      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/bedrock_gemma_demo.py",
-      "args": ["--stream"],
-      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/bedrock_gemma_demo.py",
+      "args": [
+        "--stream"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
     },
     {
       "name": "시연 전 환경 점검",
-      "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/check_env.py",
-      "console": "integratedTerminal", "cwd": "${workspaceFolder}"
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/check_env.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Part 2 · KV 캐시 계산기 (Llama 3.1 8B, 24GB)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/part2/kv_cache_calc.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Part 2 · PagedAttention 시뮬레이터",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/part2/paged_attention_sim.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Part 2 · 서빙 벤치마크 (로컬 Ollama, llama3.2)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/part2/bench_serving.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--model",
+        "llama3.2",
+        "--levels",
+        "1,2,4,8"
+      ]
+    },
+    {
+      "name": "Part 2 · 양자화 비교 (llama3.2 3B fp16/q8/q4)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/part2/quant_compare.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Part 2 · vLLM 지표 보기 (localhost:8000)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/part2/vllm_metrics.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--url",
+        "http://localhost:8000"
+      ]
+    },
+    {
+      "name": "Part 1 · 컨테이너 Ollama 로 가드레일 시연 (11435)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/guardrail_demo.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--base-url",
+        "http://localhost:11435/v1"
+      ]
     }
   ]
 }

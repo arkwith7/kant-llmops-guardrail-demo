@@ -1,0 +1,62 @@
+# Part 1 · vLLM 을 Kubernetes 에 배포하는 표준 형태 (GPU 노드용)
+#   kubectl apply -f part1/k8s/vllm-deployment.yaml
+#
+# 로컬 kind 클러스터에는 GPU 가 없으므로 Pod 가 Pending 이 됩니다:
+#   kubectl describe pod -l app=llm-serving   →  "Insufficient nvidia.com/gpu"
+# 이것이 GPU 스케줄링의 핵심: Pod 가 GPU 를 '요청'하면, NVIDIA device plugin 이
+# nvidia.com/gpu 자원을 알린 노드에만 배치된다. (EKS GPU 노드 그룹, k3s + device plugin 등)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-serving
+  labels: { app: llm-serving }
+spec:
+  replicas: 1                          # 처리량이 부족하면 복제본을 늘림 (GPU 1장 = 복제본 1개)
+  selector:
+    matchLabels: { app: llm-serving }
+  template:
+    metadata:
+      labels: { app: llm-serving }
+    spec:
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:latest
+          args:
+            - --model
+            - Qwen/Qwen2.5-7B-Instruct
+            - --gpu-memory-utilization
+            - "0.9"
+            - --max-model-len
+            - "8192"
+          ports:
+            - containerPort: 8000
+          resources:
+            limits:
+              nvidia.com/gpu: 1        # GPU 요청 — 이 한 줄이 스케줄링을 결정
+              memory: 24Gi
+            requests:
+              cpu: "2"
+              memory: 16Gi
+          readinessProbe:              # 모델 로딩이 끝나야 트래픽을 받음
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 60
+          volumeMounts:
+            - { name: model-cache, mountPath: /root/.cache/huggingface }
+            - { name: shm, mountPath: /dev/shm }
+      volumes:
+        - name: model-cache            # 운영에서는 PVC 로 바꿔 재시작 때 재다운로드를 막음
+          emptyDir: {}
+        - name: shm
+          emptyDir: { medium: Memory, sizeLimit: 2Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-serving
+spec:
+  selector: { app: llm-serving }
+  ports:
+    - port: 8000
+      targetPort: 8000
