@@ -20,7 +20,7 @@
       "console": "integratedTerminal", "cwd": "${workspaceFolder}"
     },
     {
-      "name": "④ 백업: AWS Bedrock 도쿄 리전 (Gemma 3 12B)",
+      "name": "④ 백업: AWS Bedrock (.env 리전·모델, 기본 도쿄)",
       "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/guardrail_demo.py",
       "args": ["--backend", "bedrock"],
       "console": "integratedTerminal", "cwd": "${workspaceFolder}"

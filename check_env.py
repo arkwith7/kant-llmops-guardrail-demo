@@ -54,7 +54,7 @@ def check_bedrock() -> None:
         text, u = BedrockLLM().chat("한 단어로 답하세요.", "대한민국의 수도는?", max_tokens=20)
         print(f"{OK} Bedrock {BEDROCK_MODEL}: '{text[:30]}' · 모델 {u.get('model_ms')} ms · 토큰 {u.get('input_tokens')}→{u.get('output_tokens')}")
     except LLMError as e:
-        print(f"{NG} Bedrock: {e}")
+        print(f"{NG} Bedrock {BEDROCK_MODEL} ({AWS_REGION}): {e}")
 
 
 def check_mock() -> None:

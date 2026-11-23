@@ -3,8 +3,8 @@ LLM 체험 데모 — AWS Bedrock Gemma 3 (리전은 .env 의 AWS_REGION, 기본
 -------------------------------------------------------------
 로컬 GPU를 쓸 수 없을 때, 같은 오픈 웨이트 계열 모델을 '관리형 클라우드'에서 체험한다.
 
-- Gemma 3: google.gemma-3-4b-it / 12b-it / 27b-it
-  (계정·리전마다 제공 모델이 다르므로 --list 로 먼저 확인. 이 프로젝트는 도쿄 리전에서 검증)
+- Gemma 3: google.gemma-3-4b-it / 12b-it / 27b-it (이 프로젝트는 도쿄 리전에서 검증)
+- 계정·리전마다 제공 모델이 다르므로 후보 리전의 카탈로그를 --list 로 조회하고, AWS_REGION으로 정한 리전에서만 추론
 - Converse API: 모델이 바뀌어도 같은 코드
 - 응답과 함께 지연 시간·토큰 수 출력 → '관측성'으로 연결
 - 인증: IAM 사용자 액세스 키 (.env 의 AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY) 또는 aws configure
@@ -14,7 +14,8 @@ LLM 체험 데모 — AWS Bedrock Gemma 3 (리전은 .env 의 AWS_REGION, 기본
   python bedrock_gemma_demo.py --compare       # 4B / 12B / 27B 비교
   python bedrock_gemma_demo.py --stream        # 첫 토큰까지 시간 측정
   python bedrock_gemma_demo.py --chat --model google.gemma-3-4b-it
-  python bedrock_gemma_demo.py --list          # 현재 리전 Google·Meta 모델 목록 (bedrock:ListFoundationModels 권한)
+  python bedrock_gemma_demo.py --list          # 설정된 리전의 온디맨드 텍스트 출력 모델 (bedrock:ListFoundationModels 권한)
+  python bedrock_gemma_demo.py --list ap-northeast-2 ap-northeast-1 us-west-2 us-east-1
 """
 from __future__ import annotations
 
@@ -22,7 +23,6 @@ import argparse
 import sys
 import time
 
-import llm_backends  # .env 로드
 from llm_backends import AWS_REGION, BEDROCK_MODEL
 
 try:
@@ -41,13 +41,27 @@ SYSTEM = "당신은 IT 교육 과정의 친절한 조교입니다. 한국어로 
 DEFAULT_Q = "Private LLM을 회사 내부에 직접 운영할 때의 장점과 단점을 각각 2가지씩 알려줘."
 
 
-def list_models() -> None:
-    bedrock = boto3.client("bedrock", region_name=AWS_REGION)
-    for provider in ("Google", "Meta"):
-        models = bedrock.list_foundation_models(byProvider=provider).get("modelSummaries", [])
-        print(f"\n[{provider}] {len(models)}개")
+def list_models(regions: list[str], target: str) -> None:
+    failed = False
+    matches = []
+    for region in dict.fromkeys(regions):
+        try:
+            bedrock = boto3.client("bedrock", region_name=region)
+            models = bedrock.list_foundation_models(
+                byInferenceType="ON_DEMAND", byOutputModality="TEXT"
+            )["modelSummaries"]
+        except (ClientError, BotoCoreError) as e:
+            print(f"\n[{region}] 조회 실패: {e}", file=sys.stderr)
+            failed = True
+            continue
+        print(f"\n[{region}] 온디맨드 텍스트 출력 모델 {len(models)}개")
         for m in models:
-            print(f"  {m['modelId']:<34} {m.get('modelName', ''):<22} {','.join(m.get('inferenceTypesSupported', []))}")
+            print(f"  {m['modelId']:<42} {m.get('modelLifecycle', {}).get('status', '-')}")
+        if any(m["modelId"] == target for m in models):
+            matches.append(region)
+    print(f"\n[조회에 성공한 카탈로그 기준] {target}: {', '.join(matches) or '찾지 못함'}")
+    if failed:
+        sys.exit(1)
 
 
 def ask(client, model_id: str, question: str, history: list | None = None) -> tuple[str, dict]:
@@ -93,18 +107,18 @@ def print_stats(model_id: str, s: dict) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Bedrock Gemma 3 체험")
+    ap = argparse.ArgumentParser(description="Bedrock 리전별 모델 조회 및 Gemma 3 체험")
     ap.add_argument("--model", default=BEDROCK_MODEL)
     ap.add_argument("-q", "--question", default=DEFAULT_Q)
-    ap.add_argument("--list", action="store_true")
+    ap.add_argument("--list", nargs="*", metavar="REGION", help="후보 리전별 카탈로그 조회 (생략 시 AWS_REGION)")
     ap.add_argument("--compare", action="store_true")
     ap.add_argument("--stream", action="store_true")
     ap.add_argument("--chat", action="store_true")
     args = ap.parse_args()
 
     try:
-        if args.list:
-            list_models()
+        if args.list is not None:
+            list_models(args.list or [AWS_REGION], args.model)
             return
         client = boto3.client("bedrock-runtime", region_name=AWS_REGION)
         print(f"[리전] {AWS_REGION}")
