@@ -1,10 +1,10 @@
 """
-LLM 체험 데모 — AWS Bedrock 서울 리전(ap-northeast-2) Gemma 3
+LLM 체험 데모 — AWS Bedrock Gemma 3 (리전은 .env 의 AWS_REGION, 기본 도쿄 ap-northeast-1)
 -------------------------------------------------------------
 로컬 GPU를 쓸 수 없을 때, 같은 오픈 웨이트 계열 모델을 '관리형 클라우드'에서 체험한다.
 
-- 서울 리전 In-Region 제공 Gemma 3: google.gemma-3-4b-it / 12b-it / 27b-it
-  (Meta Llama 3.x 는 서울 리전에서 제공되지 않음)
+- Gemma 3: google.gemma-3-4b-it / 12b-it / 27b-it
+  (계정·리전마다 제공 모델이 다르므로 --list 로 먼저 확인. 이 프로젝트는 도쿄 리전에서 검증)
 - Converse API: 모델이 바뀌어도 같은 코드
 - 응답과 함께 지연 시간·토큰 수 출력 → '관측성'으로 연결
 - 인증: IAM 사용자 액세스 키 (.env 의 AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY) 또는 aws configure
@@ -14,7 +14,7 @@ LLM 체험 데모 — AWS Bedrock 서울 리전(ap-northeast-2) Gemma 3
   python bedrock_gemma_demo.py --compare       # 4B / 12B / 27B 비교
   python bedrock_gemma_demo.py --stream        # 첫 토큰까지 시간 측정
   python bedrock_gemma_demo.py --chat --model google.gemma-3-4b-it
-  python bedrock_gemma_demo.py --list          # 서울 리전 Google·Meta 모델 목록 (bedrock:ListFoundationModels 권한)
+  python bedrock_gemma_demo.py --list          # 현재 리전 Google·Meta 모델 목록 (bedrock:ListFoundationModels 권한)
 """
 from __future__ import annotations
 
@@ -93,7 +93,7 @@ def print_stats(model_id: str, s: dict) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Bedrock 서울 리전 Gemma 3 체험")
+    ap = argparse.ArgumentParser(description="Bedrock Gemma 3 체험")
     ap.add_argument("--model", default=BEDROCK_MODEL)
     ap.add_argument("-q", "--question", default=DEFAULT_Q)
     ap.add_argument("--list", action="store_true")

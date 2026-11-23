@@ -7,7 +7,7 @@
 실행 예:
   python guardrail_demo.py                          # local: 로컬 Ollama gemma3:27b (기본)
   python guardrail_demo.py --model llama3.2         # 작은 모델과 비교
-  python guardrail_demo.py --backend bedrock        # AWS Bedrock 서울 리전 Gemma 3 (IAM 자격 증명)
+  python guardrail_demo.py --backend bedrock        # AWS Bedrock Gemma 3 (리전은 .env 의 AWS_REGION, IAM 자격 증명)
   python guardrail_demo.py --backend mock           # 모의 LLM (최종 백업)
   python guardrail_demo.py --chat                   # 수강생 질문을 바로 넣어 보는 대화 모드
 """

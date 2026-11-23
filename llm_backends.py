@@ -2,7 +2,7 @@
 LLM 백엔드 모음 — 가드레일 로직과 분리해, 같은 파이프라인을 여러 LLM에 붙일 수 있게 한다.
 
   local   : 로컬 Private LLM (Ollama / vLLM) — OpenAI 호환 /v1/chat/completions, 표준 라이브러리만 사용
-  bedrock : AWS Bedrock (기본 서울 리전) — boto3 Converse API, IAM 자격 증명(.env 또는 aws configure)
+  bedrock : AWS Bedrock (리전은 .env 의 AWS_REGION, 기본 도쿄 ap-northeast-1) — boto3 Converse API, IAM 자격 증명(.env 또는 aws configure)
   mock    : 모의 LLM — 인터넷·GPU 없이 항상 같은 결과
 
 설정은 프로젝트 루트의 .env 에서 읽는다 (.env.example 참고).
@@ -40,7 +40,7 @@ load_env()
 
 LOCAL_BASE_URL = os.getenv("LOCAL_LLM_BASE_URL", "http://localhost:11434/v1")  # Ollama (vLLM: :8000/v1)
 LOCAL_MODEL = os.getenv("LOCAL_LLM_MODEL", "gemma3:27b")
-AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-2")
+AWS_REGION = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "ap-northeast-1"
 BEDROCK_MODEL = os.getenv("BEDROCK_MODEL_ID", "google.gemma-3-12b-it")
 
 
