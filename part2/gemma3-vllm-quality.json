@@ -1,0 +1,74 @@
+{
+  "base_url": "http://127.0.0.1:8001/v1",
+  "model": "gemma3-compare",
+  "system": "한국어로 답하세요. 주어진 정보만 사용하고, 지시된 형식을 따르세요.",
+  "temperature": 0,
+  "max_tokens": 160,
+  "results": [
+    {
+      "case": "지식",
+      "question": "대한민국의 수도를 한 단어로 답하세요.",
+      "expected": "서울",
+      "answer": "서울",
+      "ok": true,
+      "usage": {
+        "input_tokens": 41,
+        "output_tokens": 3,
+        "model_ms": 268
+      },
+      "latency_s": 0.268
+    },
+    {
+      "case": "계산",
+      "question": "17개 제품을 개당 3,000원에 팔았습니다. 매출액을 원 단위로 답하세요.",
+      "expected": "51000원",
+      "answer": "총 매출액은 51,000원입니다. (17개 * 3,000원/개 = 51,000원)",
+      "ok": true,
+      "usage": {
+        "input_tokens": 56,
+        "output_tokens": 40,
+        "model_ms": 1440
+      },
+      "latency_s": 1.44
+    },
+    {
+      "case": "SQL",
+      "question": "sales(region, month, amount)에서 10월 지역별 매출 합계를 조회하는 SELECT SQL을 작성하세요.",
+      "expected": "region 그룹별 SUM(amount), month=10",
+      "answer": "```sql\nSELECT region, SUM(amount)\nFROM sales\nWHERE month = '10월'\nGROUP BY region;\n```",
+      "ok": true,
+      "usage": {
+        "input_tokens": 56,
+        "output_tokens": 31,
+        "model_ms": 1134
+      },
+      "latency_s": 1.134
+    },
+    {
+      "case": "근거",
+      "question": "문서: A팀은 월요일, B팀은 화요일에 회의합니다. C팀의 회의 요일은 무엇입니까?",
+      "expected": "주어진 정보에 없음",
+      "answer": "주어진 정보에는 C팀의 회의 요일에 대한 내용이 없습니다.",
+      "ok": true,
+      "usage": {
+        "input_tokens": 61,
+        "output_tokens": 18,
+        "model_ms": 707
+      },
+      "latency_s": 0.708
+    },
+    {
+      "case": "형식",
+      "question": "사과 3개와 배 2개를 fruit 및 count 필드를 가진 JSON 배열로만 출력하세요.",
+      "expected": "fruit/count JSON 배열",
+      "answer": "```json\n[\n  {\n    \"fruit\": \"사과\",\n    \"count\": 3\n  },\n  {\n    \"fruit\": \"배\",\n    \"count\": 2\n  }\n]\n```",
+      "ok": true,
+      "usage": {
+        "input_tokens": 53,
+        "output_tokens": 53,
+        "model_ms": 1848
+      },
+      "latency_s": 1.848
+    }
+  ]
+}

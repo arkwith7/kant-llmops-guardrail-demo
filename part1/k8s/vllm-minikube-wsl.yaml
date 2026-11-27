@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-local
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: vllm-local }
+  template:
+    metadata:
+      labels: { app: vllm-local }
+    spec:
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.34.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - Qwen/Qwen2.5-1.5B-Instruct
+            - --gpu-memory-utilization
+            - "0.80"
+            - --max-model-len
+            - "4096"
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              nvidia.com/gpu: 1
+              memory: 7Gi
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            periodSeconds: 10
+            failureThreshold: 90
+          volumeMounts:
+            - { name: model-cache, mountPath: /root/.cache/huggingface }
+            - { name: shm, mountPath: /dev/shm }
+            - { name: wsl-cuda, mountPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1, readOnly: true }
+            - { name: wsl-nvml, mountPath: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1, readOnly: true }
+            - { name: wsl-dxcore, mountPath: /usr/lib/x86_64-linux-gnu/libdxcore.so, readOnly: true }
+      volumes:
+        - name: model-cache
+          hostPath: { path: /data/kant-huggingface, type: DirectoryOrCreate }
+        - name: shm
+          emptyDir: { medium: Memory, sizeLimit: 2Gi }
+        - name: wsl-cuda
+          hostPath: { path: /usr/lib/x86_64-linux-gnu/libcuda.so.1, type: File }
+        - name: wsl-nvml
+          hostPath: { path: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1, type: File }
+        - name: wsl-dxcore
+          hostPath: { path: /usr/lib/x86_64-linux-gnu/libdxcore.so, type: File }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-local
+spec:
+  selector: { app: vllm-local }
+  ports:
+    - port: 8000
+      targetPort: 8000

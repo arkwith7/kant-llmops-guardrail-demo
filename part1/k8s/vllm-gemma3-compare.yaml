@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-gemma3-compare
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: vllm-gemma3-compare }
+  template:
+    metadata:
+      labels: { app: vllm-gemma3-compare }
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: vllm
+          image: kant-vllm-gemma3:0.34.0
+          imagePullPolicy: Never
+          env:
+            - { name: HF_HUB_OFFLINE, value: "1" }
+          args:
+            - ISTA-DASLab/gemma-3-27b-it-GPTQ-4b-128g
+            - --revision
+            - 9c5f61a23e1ccf3921173c2b32f6ff0af1bffd1b
+            - --served-model-name
+            - gemma3-compare
+            - --max-model-len
+            - "2048"
+            - --gpu-memory-utilization
+            - "0.90"
+            - --max-num-seqs
+            - "8"
+            - --max-num-batched-tokens
+            - "2048"
+            - --language-model-only
+          ports:
+            - containerPort: 8000
+          resources:
+            requests: { cpu: "2", memory: 6Gi }
+            limits: { nvidia.com/gpu: 1, memory: 20Gi }
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            periodSeconds: 10
+            failureThreshold: 90
+          volumeMounts:
+            - { name: model-cache, mountPath: /root/.cache/huggingface }
+            - { name: shm, mountPath: /dev/shm }
+            - { name: wsl-cuda, mountPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1, readOnly: true }
+            - { name: wsl-nvml, mountPath: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1, readOnly: true }
+            - { name: wsl-dxcore, mountPath: /usr/lib/x86_64-linux-gnu/libdxcore.so, readOnly: true }
+      volumes:
+        - name: model-cache
+          hostPath: { path: /data/kant-huggingface, type: DirectoryOrCreate }
+        - name: shm
+          emptyDir: { medium: Memory, sizeLimit: 2Gi }
+        - name: wsl-cuda
+          hostPath: { path: /usr/lib/x86_64-linux-gnu/libcuda.so.1, type: File }
+        - name: wsl-nvml
+          hostPath: { path: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1, type: File }
+        - name: wsl-dxcore
+          hostPath: { path: /usr/lib/x86_64-linux-gnu/libdxcore.so, type: File }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-gemma3-compare
+spec:
+  selector: { app: vllm-gemma3-compare }
+  ports:
+    - port: 8000
+      targetPort: 8000

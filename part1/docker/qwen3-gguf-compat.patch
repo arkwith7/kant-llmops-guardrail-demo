@@ -1,0 +1,11 @@
+--- default.py
++++ default.py
+@@ -93,7 +93,7 @@
+                 sideload_params.append(
+                     regex.compile(
+                         f"model\\.layers\\.{idx}"
+-                        r"\.mlp\.experts\.[0-9]+\.(gate|up|down)_proj\.weight"
++                        r"\.mlp\.experts\.(?:[0-9]+\.(?:gate|up|down)_proj\.weight|gate_up_proj)"
+                     )
+                 )
+         if model_type == "olmoe":

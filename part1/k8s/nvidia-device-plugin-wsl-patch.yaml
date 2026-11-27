@@ -1,0 +1,21 @@
+spec:
+  template:
+    spec:
+      containers:
+        - name: nvidia-device-plugin-ctr
+          volumeMounts:
+            - name: wsl-nvml
+              mountPath: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
+              readOnly: true
+            - name: wsl-dxcore
+              mountPath: /usr/lib/x86_64-linux-gnu/libdxcore.so
+              readOnly: true
+      volumes:
+        - name: wsl-nvml
+          hostPath:
+            path: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
+            type: File
+        - name: wsl-dxcore
+          hostPath:
+            path: /usr/lib/x86_64-linux-gnu/libdxcore.so
+            type: File

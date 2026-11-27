@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-qwen3-compare
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: vllm-qwen3-compare }
+  template:
+    metadata:
+      labels: { app: vllm-qwen3-compare }
+    spec:
+      containers:
+        - name: vllm
+          image: kant-vllm-gguf:0.34.0
+          imagePullPolicy: Never
+          args:
+            - /models/qwen3-30b-q4_k_m.gguf
+            - --tokenizer
+            - Qwen/Qwen3-30B-A3B-Instruct-2507
+            - --hf-config-path
+            - Qwen/Qwen3-30B-A3B-Instruct-2507
+            - --served-model-name
+            - qwen3-compare
+            - --max-model-len
+            - "2048"
+            - --gpu-memory-utilization
+            - "0.90"
+            - --max-num-seqs
+            - "8"
+            - --enforce-eager
+          ports:
+            - containerPort: 8000
+          resources:
+            requests: { cpu: "2", memory: 6Gi }
+            limits: { nvidia.com/gpu: 1, memory: 20Gi }
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            periodSeconds: 10
+            failureThreshold: 90
+          volumeMounts:
+            - { name: model, mountPath: /models/qwen3-30b-q4_k_m.gguf, readOnly: true }
+            - { name: model-cache, mountPath: /root/.cache/huggingface }
+            - { name: shm, mountPath: /dev/shm }
+            - { name: wsl-cuda, mountPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1, readOnly: true }
+            - { name: wsl-nvml, mountPath: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1, readOnly: true }
+            - { name: wsl-dxcore, mountPath: /usr/lib/x86_64-linux-gnu/libdxcore.so, readOnly: true }
+      volumes:
+        - name: model
+          hostPath: { path: /data/kant-qwen3-30b-q4_k_m.gguf, type: File }
+        - name: model-cache
+          hostPath: { path: /data/kant-huggingface, type: DirectoryOrCreate }
+        - name: shm
+          emptyDir: { medium: Memory, sizeLimit: 2Gi }
+        - name: wsl-cuda
+          hostPath: { path: /usr/lib/x86_64-linux-gnu/libcuda.so.1, type: File }
+        - name: wsl-nvml
+          hostPath: { path: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1, type: File }
+        - name: wsl-dxcore
+          hostPath: { path: /usr/lib/x86_64-linux-gnu/libdxcore.so, type: File }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-qwen3-compare
+spec:
+  selector: { app: vllm-qwen3-compare }
+  ports:
+    - port: 8000
+      targetPort: 8000

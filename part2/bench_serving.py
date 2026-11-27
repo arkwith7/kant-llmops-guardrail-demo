@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import statistics
 import sys
@@ -47,6 +48,7 @@ def one_request(base_url: str, model: str, max_tokens: int) -> dict:
                                  headers={"Content-Type": "application/json"})
     t0 = time.perf_counter()
     ttft, chunks, usage_tokens = None, 0, None
+    content = []
     with urllib.request.urlopen(req, timeout=600) as r:
         for raw in r:
             line = raw.decode("utf-8", "ignore").strip()
@@ -63,23 +65,48 @@ def one_request(base_url: str, model: str, max_tokens: int) -> dict:
                     if ttft is None:
                         ttft = time.perf_counter() - t0
                     chunks += 1
+                    content.append(ch["delta"]["content"])
     total = time.perf_counter() - t0
-    return {"ttft": ttft or total, "total": total, "tokens": usage_tokens or chunks}
+    if ttft is None:
+        raise ValueError("응답에 텍스트가 없습니다")
+    return {"ok": True, "ttft": ttft, "total": total, "tokens": usage_tokens,
+            "chunks": chunks, "response": "".join(content)}
 
 
-def run_level(base_url: str, model: str, n: int, max_tokens: int) -> dict:
+def percentile(values: list[float], percentile_value: float) -> float | None:
+    if not values:
+        return None
+    return sorted(values)[math.ceil(len(values) * percentile_value) - 1]
+
+
+def run_level(base_url: str, model: str, n: int, max_tokens: int, repeats: int = 1) -> dict:
+    def request(_: int) -> dict:
+        try:
+            return one_request(base_url, model, max_tokens)
+        except Exception as error:
+            return {"ok": False, "error": f"{type(error).__name__}: {error}"}
+
     t0 = time.perf_counter()
     with ThreadPoolExecutor(max_workers=n) as ex:
-        results = list(ex.map(lambda _: one_request(base_url, model, max_tokens), range(n)))
+        results = list(ex.map(request, range(n * repeats)))
     wall = time.perf_counter() - t0
-    tokens = sum(r["tokens"] for r in results)
+    successful = [result for result in results if result["ok"]]
+    ttfts = [result["ttft"] for result in successful]
+    all_usage = bool(successful) and all(result["tokens"] is not None for result in successful)
+    tokens = sum(result["tokens"] for result in successful) if all_usage else None
     return {
         "n": n,
-        "ttft_p50": statistics.median(r["ttft"] for r in results),
-        "ttft_max": max(r["ttft"] for r in results),
-        "throughput": tokens / wall,
-        "per_user": statistics.median(r["tokens"] / max(r["total"] - r["ttft"], 1e-6) for r in results),
+        "requests": len(results),
+        "succeeded": len(successful),
+        "failed": len(results) - len(successful),
+        "ttft_p50": statistics.median(ttfts) if ttfts else None,
+        "ttft_p95": percentile(ttfts, 0.95),
+        "ttft_max": max(ttfts) if ttfts else None,
+        "throughput": tokens / wall if tokens is not None else None,
+        "per_user": statistics.median(result["tokens"] / max(result["total"] - result["ttft"], 1e-6)
+                                      for result in successful) if all_usage else None,
         "wall": wall,
+        "results": results,
     }
 
 
@@ -89,23 +116,35 @@ def main() -> None:
     ap.add_argument("--model", default=LOCAL_MODEL)
     ap.add_argument("--levels", default="1,2,4,8", help="동시 요청 수 목록")
     ap.add_argument("--max-tokens", type=int, default=200)
+    ap.add_argument("--repeats", type=int, default=1, help="동시 요청 수당 반복 횟수")
+    ap.add_argument("--include-responses", action="store_true", help="개별 모델 응답을 로그에 포함")
     ap.add_argument("--out", default="logs/bench_serving.jsonl")
     a = ap.parse_args()
+    if a.repeats < 1:
+        ap.error("--repeats는 1 이상이어야 합니다")
     base = a.base_url.rstrip("/")
 
     print(f"[대상] {base} · {a.model} · 요청당 최대 {a.max_tokens} 토큰")
     print("예열 중 …")
     one_request(base, a.model, 16)
 
-    print(f"\n{'동시 요청':>8} | {'첫 토큰 p50':>10} | {'첫 토큰 최대':>10} | {'총 처리량':>12} | {'사용자 1명 체감':>14}")
+    print(f"\n{'동시':>4} | {'성공/전체':>9} | {'TTFT p50':>9} | {'TTFT p95':>9} | {'TTFT 최대':>9} | {'총 tok/s':>10}")
     print("-" * 72)
-    os.makedirs(os.path.dirname(a.out), exist_ok=True)
+    os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     for n in [int(x) for x in a.levels.split(",")]:
-        r = run_level(base, a.model, n, a.max_tokens)
-        print(f"{r['n']:>8} | {r['ttft_p50']:>8.2f} s | {r['ttft_max']:>8.2f} s | "
-              f"{r['throughput']:>8.1f} tok/s | {r['per_user']:>10.1f} tok/s")
+        if n < 1:
+            ap.error("--levels는 1 이상의 정수 목록이어야 합니다")
+        r = run_level(base, a.model, n, a.max_tokens, a.repeats)
+        display = lambda value, digits: f"{value:.{digits}f}" if value is not None else "N/A"
+        print(f"{r['n']:>4} | {r['succeeded']:>4}/{r['requests']:<4} | "
+              f"{display(r['ttft_p50'], 2):>9} | {display(r['ttft_p95'], 2):>9} | "
+              f"{display(r['ttft_max'], 2):>9} | {display(r['throughput'], 1):>10}")
+        if not a.include_responses:
+            for result in r["results"]:
+                result.pop("response", None)
         with open(a.out, "a", encoding="utf-8") as f:
-            f.write(json.dumps({"base_url": base, "model": a.model, **r}, ensure_ascii=False) + "\n")
+            f.write(json.dumps({"base_url": base, "model": a.model, "max_tokens": a.max_tokens,
+                                "repeats": a.repeats, **r}, ensure_ascii=False) + "\n")
     print("\n읽는 법: 동시 요청이 늘 때 '총 처리량'이 같이 늘면 배칭이 잘 되는 서버,")
     print("        '첫 토큰 최대'만 늘면 요청이 줄 서서 기다리는 서버입니다.")
 

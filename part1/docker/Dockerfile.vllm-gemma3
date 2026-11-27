@@ -1,0 +1,2 @@
+FROM vllm/vllm-openai:v0.34.0
+RUN python3 -m pip install --no-cache-dir protobuf==7.36.1

@@ -1,0 +1,4 @@
+FROM vllm/vllm-openai:v0.34.0
+RUN python3 -m pip install --no-cache-dir --no-deps vllm-gguf-plugin==0.0.5
+COPY qwen3-gguf-compat.patch /tmp/qwen3-gguf-compat.patch
+RUN patch /usr/local/lib/python3.12/dist-packages/vllm_gguf_plugin/weights_adapter/default.py /tmp/qwen3-gguf-compat.patch

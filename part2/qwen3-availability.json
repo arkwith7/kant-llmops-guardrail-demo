@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-27",
+  "environment": "WSL2, Minikube, one RTX 5090 Laptop GPU, one Qwen3 GGUF vLLM pod",
+  "cached_pod_start": {
+    "created_utc": "2026-11-27T14:07:03Z",
+    "ready_utc": "2026-11-27T14:09:42Z",
+    "created_to_ready_s": 159,
+    "samples": 1
+  },
+  "forced_pod_deletion": {
+    "delete_requested_utc": "2026-11-27T14:12:18Z",
+    "replacement_created_utc": "2026-11-27T14:12:18Z",
+    "replacement_ready_utc": "2026-11-27T14:14:43Z",
+    "delete_to_ready_s": 145,
+    "post_ready_inference_response": "서울",
+    "samples": 1
+  },
+  "ollama_unloaded_model_warmup": {
+    "load_duration_s": 9.82,
+    "request_total_s": 10.54,
+    "samples": 1
+  },
+  "limitations": "Kubernetes Ready is not continuously measured external availability. Ollama load and Kubernetes pod readiness are different measurements. No GPU or node failure was tested."
+}

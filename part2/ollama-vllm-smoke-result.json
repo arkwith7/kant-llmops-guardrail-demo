@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-27",
+  "purpose": "Single vLLM smoke test, not a comparative benchmark",
+  "environment": "WSL2, Minikube, NVIDIA GeForce RTX 5090 Laptop GPU",
+  "server": "vLLM 0.34.0 on Kubernetes, local port-forward",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "model_dtype": "bfloat16",
+  "context_limit": 4096,
+  "command": "python3 part2/bench_serving.py --base-url http://127.0.0.1:8000/v1 --model Qwen/Qwen2.5-1.5B-Instruct --levels 1 --max-tokens 24 --out /tmp/kant-vllm-validation.jsonl",
+  "sample_count": 1,
+  "warmup_max_tokens": 16,
+  "max_output_tokens": 24,
+  "result": {
+    "base_url": "http://127.0.0.1:8000/v1",
+    "model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "n": 1,
+    "ttft_p50": 0.026692482992075384,
+    "ttft_max": 0.026692482992075384,
+    "throughput": 124.9046586837932,
+    "per_user": 145.5118233195201,
+    "wall": 0.19214655604446307
+  },
+  "limitations": "One short request after warmup. Token count may fall back to stream chunks. Ollama was not measured."
+}
